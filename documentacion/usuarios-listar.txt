@@ -1,0 +1,52 @@
+Listado de usuarios
+===================
+
+Endpoint
+--------
+Método: GET
+Ruta:   /api/usuarios
+
+Devuelve usuarios cuyo estado es true. No requiere autenticación.
+
+Parámetros de consulta
+----------------------
+- limite: cantidad máxima de usuarios devueltos; valor predeterminado: 5.
+  Debe ser un entero entre 1 y 100.
+- desde: cantidad de documentos que se omiten antes de devolver resultados;
+  valor predeterminado: 0. Debe ser un entero mayor o igual a cero.
+
+Ejemplo:
+
+GET /api/usuarios?limite=10&desde=20
+
+total cuenta todos los usuarios activos y no se limita a la página devuelta.
+
+Respuesta actual
+----------------
+Estado HTTP: 200 OK.
+
+{
+  "total": 42,
+  "usuarios": [
+    {
+      "nombre": "Nombre Apellido",
+      "correo": "usuario@example.com",
+      "rol": "USER_ROLE",
+      "estado": true,
+      "google": false,
+      "uid": "651a2f9b8c1234567890abcd"
+    }
+  ]
+}
+
+El modelo omite password, _id y __v del JSON y presenta el identificador
+como uid. Si no hay usuarios activos, devuelve total 0 y un arreglo vacío.
+
+Errores
+-------
+- 400 Bad Request: limite o desde no es un entero dentro del rango permitido.
+- 500 Internal Server Error: fallo al consultar la base de datos. Se responde
+  con JSON y un mensaje genérico, sin filtrar detalles internos.
+
+Los errores usan el formato { "ok": false, "msg": "..." }. Los errores de
+validación incluyen además el arreglo "errores".

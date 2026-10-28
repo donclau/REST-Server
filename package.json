@@ -1,7 +1,7 @@
 {
   "name": "07-restserver",
   "version": "1.0.0",
-  "description": "",
+  "description": "REST API for user management and administrator-controlled product assignments.",
   "main": "index.js",
   "scripts": {
     "test": "jest",

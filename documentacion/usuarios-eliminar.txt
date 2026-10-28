@@ -1,0 +1,66 @@
+Baja lógica de usuarios
+=======================
+
+Endpoint
+--------
+Método: DELETE
+Ruta:   /api/usuarios/:id
+
+Marca un usuario como inactivo al establecer estado en false. No elimina
+físicamente el documento.
+
+Autenticación y autorización
+----------------------------
+Enviar el JWT en el encabezado:
+
+x-token: <token>
+
+El middleware JWT también admite Authorization: Bearer <token>. El usuario
+autenticado debe existir, estar activo y tener ADMIN_ROLE. Los usuarios sin
+ese rol reciben 403 Forbidden.
+
+Parámetro de ruta
+-----------------
+- id: ID de MongoDB válido que debe corresponder a un usuario existente.
+
+La autenticación y autorización se ejecutan antes de validar el parámetro.
+Por lo tanto, un token ausente o inválido puede producir 401, y un usuario
+sin permisos puede recibir 403 antes de que se compruebe el ID.
+
+Respuesta actual
+----------------
+Estado HTTP: 200 OK
+
+{
+  "msg": "Usuario desactivado exitosamente",
+  "usuario": {
+    "nombre": "Nombre Apellido",
+    "correo": "usuario@example.com",
+    "rol": "USER_ROLE",
+    "estado": false,
+    "uid": "651a2f9b8c1234567890abcd"
+  },
+  "usuarioAutenticado": {
+    "nombre": "Administrador",
+    "correo": "admin@example.com",
+    "rol": "ADMIN_ROLE",
+    "estado": true,
+    "uid": "651a1a1a1a1a1a1a1a1a1a01"
+  }
+}
+
+El controlador solicita el documento actualizado a findByIdAndUpdate, por lo
+que usuario refleja estado false.
+
+Errores
+-------
+- 401 Unauthorized: token ausente, inválido, vencido o asociado a un usuario
+  inexistente/inactivo.
+- 403 Forbidden: usuario autenticado sin rol ADMIN_ROLE.
+- 400 Bad Request: ID inválido.
+- 404 Not Found: el usuario dejó de existir antes de la baja.
+- 500 Internal Server Error: fallo inesperado; la respuesta es JSON genérico
+  y no expone detalles internos.
+
+Los errores usan el formato { "ok": false, "msg": "..." }. Los errores de
+validación incluyen además el arreglo "errores".

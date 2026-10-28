@@ -1,7 +1,7 @@
 
-# CRUD example with node
+# REST Server API
 
-Service to be  handle the client information
+API REST para administrar usuarios y registrar asignaciones de productos realizadas por administradores.
 
 **Installation of dependencies:** 
 
@@ -22,6 +22,14 @@ SECRETORPRIVATEKEY=Est0EsMyPubl1cKey23@66601992
 ```bash
 node createDocumentsForRole.js
 ```
+
+**Create 300 users with the USER_ROLE role:**
+
+```bash
+node createUsers.js
+```
+
+The generated users use Gmail or Hotmail addresses and the initial password `User1234!`.
 
 **Execute backend app:** 
 ```bash
@@ -88,3 +96,29 @@ nodemon app.js
 | Header | Type     | Description                       |
 | :-------- | :------- | :-------------------------------- |
 | `x-token`      | `string` | Token generated when an admin log in. |
+
+#### Post: Assign a product to a user (only with ADMIN_ROLE)
+
+```http
+  POST {{url}}/api/productos/asignaciones
+```
+
+Send the JWT in the `Authorization: Bearer <token>` header. The legacy `x-token`
+header is also accepted.
+
+```json
+{
+  "usuarioId": "651a2f9b8c1234567890abcd",
+  "solicitudId": "SOL-2026-089",
+  "nombreProducto": "Alfajor Triple Chocotorta",
+  "cantidad": 2,
+  "precioUnitario": 2.00
+}
+```
+
+The recipient must be an active user with the `USER_ROLE` role. A successful
+request returns `201 Created`, including the generated assignment ID, the
+authenticated administrator ID, the calculated total, status, and creation
+date. Invalid request data returns `400 Bad Request`; missing or ineligible
+recipients return `404 Not Found`; authenticated users without the admin role
+receive `403 Forbidden`.

@@ -1,0 +1,69 @@
+Inicio de sesión
+================
+
+Endpoint
+--------
+Método: POST
+Ruta:   /api/auth/login
+
+Autentica a un usuario mediante correo y contraseña. No requiere token previo.
+El inicio de sesión no está restringido a ADMIN_ROLE: cualquier usuario activo
+con credenciales válidas puede obtener un JWT.
+
+Cuerpo de la petición
+---------------------
+Content-Type: application/json
+
+{
+  "correo": "usuario@example.com",
+  "password": "contraseña"
+}
+
+Validaciones y comportamiento
+-----------------------------
+- correo debe tener formato de email.
+- password no puede estar vacía.
+- El usuario debe existir y tener estado activo.
+- La contraseña se compara con el hash almacenado.
+- El JWT se firma con SECRETORPRIVATEKEY y vence a las 4 horas.
+- El acceso no depende del rol; las rutas protegidas verifican permisos por
+  separado.
+- El modelo de usuario omite password, _id y __v en su representación JSON;
+  expone el identificador como uid.
+
+Respuesta exitosa
+-----------------
+Estado HTTP: 200 OK
+
+{
+  "usuario": {
+    "nombre": "Nombre Apellido",
+    "correo": "usuario@example.com",
+    "rol": "USER_ROLE",
+    "estado": true,
+    "google": false,
+    "uid": "651a2f9b8c1234567890abcd"
+  },
+  "token": "<jwt>"
+}
+
+Errores
+-------
+- 400 Bad Request: correo o contraseña ausentes o inválidos.
+- 401 Unauthorized: usuario inexistente, inactivo o contraseña incorrecta.
+  Las credenciales incorrectas responden con el mismo mensaje para no revelar
+  si un correo está registrado.
+- 500 Internal Server Error: fallo inesperado al consultar la base de datos
+  o generar el token. La respuesta no expone detalles internos.
+
+Formato de errores
+------------------
+Los errores de credenciales y del servidor usan el formato:
+
+{
+  "ok": false,
+  "msg": "Correo o contraseña incorrectos"
+}
+
+Los errores de validación devuelven también un arreglo errores con los campos
+que no cumplen el contrato.

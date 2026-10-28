@@ -1,0 +1,106 @@
+Asignación de productos a usuarios
+==================================
+
+Endpoint
+--------
+Método: POST
+Ruta:   /api/productos/asignaciones
+
+Registra una asignación de producto a un usuario activo con rol USER_ROLE.
+Cada llamada crea una asignación nueva; el endpoint no consulta ni modifica
+asignaciones ya creadas.
+
+Autenticación y autorización
+----------------------------
+Enviar un JWT válido en uno de estos encabezados:
+
+Authorization: Bearer <token>
+
+También se admite el encabezado heredado:
+
+x-token: <token>
+
+El middleware valida la firma HS256, la vigencia del token y que su uid
+corresponda a un usuario activo. Después, la ruta comprueba el rol actual de
+ese usuario en la base de datos: solo ADMIN_ROLE puede crear asignaciones.
+El rol se consulta en la base de datos; no se toma de un claim de rol del JWT.
+
+El administrador que realiza la operación se obtiene del usuario autenticado
+(req.usuario). No se debe enviar administradorId en el cuerpo. Si se incluye,
+el controlador lo ignora.
+
+Cuerpo de la petición
+---------------------
+Content-Type: application/json
+
+{
+  "usuarioId": "651a2f9b8c1234567890abcd",
+  "solicitudId": "SOL-2026-089",
+  "nombreProducto": "Alfajor Triple Chocotorta",
+  "cantidad": 2,
+  "precioUnitario": 2.00
+}
+
+Reglas de validación
+--------------------
+- usuarioId: ID de MongoDB válido.
+- solicitudId: texto obligatorio, sin espacios al inicio o al final.
+- nombreProducto: texto obligatorio, sin espacios al inicio o al final.
+- cantidad: número entero mayor o igual a 1.
+- precioUnitario: número mayor o igual a 0.
+- El destinatario debe existir, estar activo y tener rol USER_ROLE.
+- precioTotal se calcula en el servidor como cantidad por precioUnitario.
+- precioUnitario se redondea a dos decimales antes de calcular el total.
+- La asignación se crea con estado PENDIENTE y fechaCreacion generada por
+  el servidor.
+
+Respuesta exitosa
+-----------------
+Estado HTTP: 201 Created
+
+{
+  "ok": true,
+  "msg": "Producto asignado exitosamente al usuario",
+  "asignacion": {
+    "id": "651b4e8c1234567890fedcba",
+    "solicitudId": "SOL-2026-089",
+    "administradorId": "651a1a1a1a1a1a1a1a1a1a01",
+    "usuarioId": "651a2f9b8c1234567890abcd",
+    "nombreProducto": "Alfajor Triple Chocotorta",
+    "cantidad": 2,
+    "precioUnitario": 2,
+    "precioTotal": 4,
+    "estado": "PENDIENTE",
+    "fechaCreacion": "2026-10-27T14:30:00.000Z"
+  }
+}
+
+Los valores de ejemplo son ilustrativos. id lo genera MongoDB para el nuevo
+registro; administradorId identifica al administrador autenticado;
+solicitudId es una referencia de negocio que proporciona el cliente;
+usuarioId identifica al destinatario. fechaCreacion es una fecha ISO 8601
+generada por el servidor.
+
+Errores
+-------
+- 400 Bad Request: JSON mal formado, campos ausentes o inválidos, o error
+  de validación del esquema. La respuesta incluye el arreglo "errores"
+  cuando aplica.
+- 401 Unauthorized: token ausente, inválido, vencido, o asociado a un usuario
+  inexistente/inactivo.
+- 403 Forbidden: token válido, pero el usuario autenticado no tiene rol
+  ADMIN_ROLE.
+- 404 Not Found: usuarioId no corresponde a un usuario existente, activo y
+  con rol USER_ROLE.
+- 500 Internal Server Error: error inesperado al guardar o consultar datos.
+  La respuesta es JSON genérico y no expone detalles internos.
+
+Los errores usan el formato { "ok": false, "msg": "..." }. Los errores de
+validación incluyen además el arreglo "errores".
+
+Alcance actual
+--------------
+El modelo permite los estados PENDIENTE y ENTREGADO, pero este endpoint crea
+asignaciones únicamente como PENDIENTE. Actualmente no hay endpoints para
+consultar, actualizar, entregar o eliminar una asignación; las operaciones
+futuras podrán referirse al registro mediante asignacion.id.

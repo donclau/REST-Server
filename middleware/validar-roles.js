@@ -1,50 +1,34 @@
-const { response, request } = require("express");
-
-
-
-const esAdminRole = (req=request, res=response, next) => {
-
-    if(!req.usuario){
-        return res.status(500).json({
-            msg: "Se quiere verificar el role sin validar el token primero"
-        })
+const esAdminRole = (req, res, next) => {
+    if (!req.usuario) {
+        return next(new Error("Debe validar el JWT antes de verificar el rol."));
     }
 
-    const {rol, nombre} = req.usuario;
-
-    if ( rol !== "ADMIN_ROLE") {
-        return res.status(401).json({
-            msg: `${nombre} no es administrador - No puede hacer esto`
+    if (req.usuario.rol !== "ADMIN_ROLE") {
+        return res.status(403).json({
+            ok: false,
+            msg: "No tiene permisos para realizar esta acción"
         });
     }
 
+    return next();
+};
 
-    next();
-}
-
-const tieneRole =  ( ...roles ) => {
-
-    return  ( req = request, resp = response, next) =>{
-
-        if(!req.usuario){
-            return resp.status(500).json({
-                msg: "Se quiere verificar el role sin validar el token primero"
-            })
-        }
-
-        if(!roles.includes(req.usuario.rol)){
-            return resp.status(401).json({
-                msg: `El servicio requiere uno de estos roles ${roles} - Rol actual: ${req.usuario.rol}`
-            })
-        }
-
-
-        next();
-
+const tieneRole = (...roles) => (req, res, next) => {
+    if (!req.usuario) {
+        return next(new Error("Debe validar el JWT antes de verificar el rol."));
     }
-}
+
+    if (!roles.includes(req.usuario.rol)) {
+        return res.status(403).json({
+            ok: false,
+            msg: `El servicio requiere uno de estos roles: ${roles.join(", ")}`
+        });
+    }
+
+    return next();
+};
 
 module.exports = {
     esAdminRole,
     tieneRole
-}
+};

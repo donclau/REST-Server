@@ -2,7 +2,7 @@ const { Router } = require("express");
 
 //Gran conjunto de validaciones para utilizar antes de disparar la ruta del controlador
 //Si falla algo del mdw entonces no se ejecuta la ruta
-const { check } = require("express-validator");
+const { check, query } = require("express-validator");
 
 // const { validarCampos } = require("../middleware/validar-campos");
 // const { validarJWT } = require("../middleware/validar-jwt");
@@ -11,10 +11,7 @@ const {
     validarCampos,
     validarJWT,
     esAdminRole,
-    tieneRole
  } = require("../middleware");
-
-const { esRoleValido, emailExiste, existeUsuarioPorID } = require("../helpers/db-validators");
 
 const {usuariosGet, 
     usuariosPost, 
@@ -25,23 +22,48 @@ const {usuariosGet,
 
 const router = Router();
 
-router.get('/', usuariosGet);
+router.get('/', [
+    query("limite")
+        .optional()
+        .isInt({ min: 1, max: 100 })
+        .withMessage("limite debe ser un entero entre 1 y 100")
+        .toInt(),
+    query("desde")
+        .optional()
+        .isInt({ min: 0 })
+        .withMessage("desde debe ser un entero mayor o igual a cero")
+        .toInt(),
+    validarCampos,
+], usuariosGet);
 
 router.put('/:id', [
     check("id", "No es un ID valido").isMongoId(),
-    check("id").custom( existeUsuarioPorID ),
-    check("rol").custom( esRoleValido ),
+    check("nombre")
+        .optional()
+        .isString()
+        .trim()
+        .notEmpty()
+        .withMessage("nombre debe ser una cadena no vacía"),
+    check("correo")
+        .optional()
+        .isEmail()
+        .withMessage("correo debe tener formato de email"),
+    check("password")
+        .optional()
+        .isString()
+        .isLength({ min: 6 })
+        .withMessage("password debe tener al menos 6 caracteres"),
+    check("rol", "No es un rol valido").isIn(["USER_ROLE", "ADMIN_ROLE", "VENTAS_ROLE"]),
     validarCampos,
 ], usuariosPut);
 
 router.post('/', [
     check("correo", "El correo no es valido").isEmail(),
-    check("nombre", "El nombre es obligatorio").not().isEmail(),
-    check("password", "La password debe tener mas de 6 caracteres").isLength({min:6}),
+    check("nombre", "El nombre es obligatorio").isString().trim().notEmpty(),
+    check("password", "La password debe tener al menos 6 caracteres")
+        .isString()
+        .isLength({min:6}),
     check("rol", "No es un rol valido").isIn(["USER_ROLE", "ADMIN_ROLE", "VENTAS_ROLE"]),
-    // validar contra DB
-    check("rol").custom( esRoleValido ),
-    check("correo").custom( emailExiste ),
     validarCampos,
 ],  usuariosPost);
 
@@ -49,9 +71,7 @@ router.post('/', [
 router.delete('/:id', [  
     validarJWT,
     esAdminRole,
-    tieneRole("ADMIN_ROLE"),
     check("id", "No es un ID valido").isMongoId(),
-    check("id").custom( existeUsuarioPorID ),
     validarCampos,
 ], usuariosDelete);
 

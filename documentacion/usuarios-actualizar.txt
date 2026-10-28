@@ -1,0 +1,69 @@
+Actualización de usuarios
+========================
+
+Endpoint
+--------
+Método: PUT
+Ruta:   /api/usuarios/:id
+
+Actualiza un usuario por su ID de MongoDB. Actualmente no requiere
+autenticación ni autorización.
+
+Parámetro de ruta
+-----------------
+- id: ID de MongoDB válido que debe corresponder a un usuario existente.
+
+Cuerpo de la petición
+---------------------
+Content-Type: application/json
+
+{
+  "nombre": "Nombre actualizado",
+  "correo": "nuevo@example.com",
+  "rol": "USER_ROLE",
+  "password": "nueva-clave"
+}
+
+Validaciones y comportamiento
+-----------------------------
+- El ID debe ser válido; si el usuario no existe, responde 404.
+- rol es obligatorio y debe ser USER_ROLE, ADMIN_ROLE o VENTAS_ROLE; además,
+  debe estar registrado en la colección de roles.
+- No se validan de forma general los demás campos del cuerpo.
+- Si se envían nombre, correo o password, deben cumplir sus validaciones de
+  tipo; password debe tener al menos 6 caracteres.
+- _id, google y __v se descartan. Si password contiene un valor, se cifra con
+  bcryptjs antes de actualizar.
+- Los demás campos enviados se pasan a findByIdAndUpdate con validadores
+  del esquema de Mongoose activados.
+- Actualmente no se exige rol ADMIN_ROLE ni se comprueba quién hace el cambio.
+
+Respuesta
+---------
+Estado HTTP: 200 OK
+
+{
+  "msg": "Usuario actualizado exitosamente",
+  "usuario": {
+    "nombre": "Nombre actualizado",
+    "correo": "nuevo@example.com",
+    "rol": "USER_ROLE",
+    "estado": true,
+    "google": false,
+    "uid": "651a2f9b8c1234567890abcd"
+  }
+}
+
+La respuesta contiene el documento actualizado. password, _id y __v no se
+incluyen en su JSON.
+
+Errores
+-------
+- 400 Bad Request: ID, rol o datos de esquema inválidos.
+- 404 Not Found: el usuario dejó de existir antes de actualizarse.
+- 409 Conflict: el correo actualizado ya pertenece a otro usuario.
+- 500 Internal Server Error: fallo inesperado; la respuesta es JSON genérico
+  y no expone detalles internos.
+
+Los errores usan el formato { "ok": false, "msg": "..." }. Las validaciones
+incluyen además el arreglo "errores".

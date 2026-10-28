@@ -1,0 +1,64 @@
+Creación de usuarios
+====================
+
+Endpoint
+--------
+Método: POST
+Ruta:   /api/usuarios
+
+Crea un usuario. Actualmente no requiere autenticación.
+
+Cuerpo de la petición
+---------------------
+Content-Type: application/json
+
+{
+  "nombre": "Nombre Apellido",
+  "correo": "usuario@example.com",
+  "password": "secreto123",
+  "rol": "USER_ROLE"
+}
+
+Validaciones
+------------
+- correo debe tener formato de email.
+- nombre debe ser una cadena no vacía.
+- password debe tener al menos 6 caracteres.
+- rol debe ser USER_ROLE, ADMIN_ROLE o VENTAS_ROLE y estar registrado en la
+  colección de roles.
+- Las validaciones fallidas responden 400 Bad Request e incluyen los errores
+  de express-validator.
+- correo es único en la base de datos; una colisión al persistir responde
+  409 Conflict.
+
+Comportamiento y respuesta
+--------------------------
+El controlador cifra la contraseña con bcryptjs antes de guardar el usuario.
+estado y google reciben los valores predeterminados del modelo cuando no se
+envían. La contraseña se cifra antes de guardarse y nunca se devuelve.
+La creación responde 201 Created.
+
+{
+  "msg": "Usuario creado exitosamente",
+  "usuario": {
+    "nombre": "Nombre Apellido",
+    "correo": "usuario@example.com",
+    "rol": "USER_ROLE",
+    "estado": true,
+    "google": false,
+    "uid": "651a2f9b8c1234567890abcd"
+  }
+}
+
+La representación JSON del modelo omite password, _id y __v; expone el ID
+como uid.
+
+Errores
+-------
+- 400 Bad Request: datos ausentes o inválidos, o rol que no está registrado.
+- 409 Conflict: un valor único, como el correo, ya existe.
+- 500 Internal Server Error: fallo inesperado al consultar o guardar. Se
+  responde con JSON genérico y no se exponen detalles internos.
+
+Todos los errores siguen el formato { "ok": false, "msg": "..." }. Las
+validaciones incluyen además el arreglo "errores".
